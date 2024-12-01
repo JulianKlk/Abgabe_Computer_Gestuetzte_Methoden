@@ -9,7 +9,7 @@
 \setlength{\parindent}{0pt}
 
 \title{Abgabe 1 für Computergestützte Methoden}
-\author{Gruppe 40, Elias Penner, Julian Kulke}
+\author{Gruppe 40, Elias Penner 4362765, Julian Kulke 4346397 }
 \date{November 2024}
 
 \begin{document}
@@ -126,23 +126,27 @@ Zuletzt filtern wir die Daten so, dass nur noch die Daten für Gruppe 40 vorlieg
 \newpage
 \subsection*{Thema: Datenhaltung}
 \subsection{Aufgabe 1.2}
+Stationen (StationID# , Name)
+\\
+
+Wetter Daten (GroupID# , Datum, count, precepitation, windspeed, min temp, avg temp, max temp, day of year, day of week, month of year)
 
 \subsection{Aufgabe 1.3}
-Zum Ausführen des SQL-Codes nutzen wir das Datenbankprogramm DB-Browser. In diesem erstellen wir zunächst eine neue leere Datenbank. Danach wählen wir den Tab \texttt{SQL-Ausführen} aus, um unser Datenbankschema mittels Code auf unsere leere Datenbank anzuwenden.
+Zum Ausführen des SQL-Codes nutzen wir die Kommandozeile mit der SQLite Erweiterung.
 \\
 
 \textbf{Code:} \newline
 \textbf{Tabelle Station:}
 \begin{verbatim}
-CREATE TABLE IF NOT EXISTS station ( 
+CREATE TABLE Stationen ( 
     station_id INTEGER PRIMARY KEY AUTOINCREMENT,
     station_name TEXT UNIQUE 
-)
+);
 \end{verbatim}
 
 \textbf{Tabelle Wetterdaten:}
 \begin{verbatim}
-CREATE TABLE IF NOT EXISTS weather_data (
+CREATE TABLE Wetter_Daten (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     group_id INTEGER,
     station_id INTEGER,
@@ -157,14 +161,64 @@ CREATE TABLE IF NOT EXISTS weather_data (
     max_temperature INTEGER,
     count INTEGER,
     FOREIGN KEY (station_id) REFERENCES station(station_id)
+);    
 \end{verbatim}
 
 
 
-
+\newpage
 \subsection{Aufgabe 1.4}
+Um die Daten aus unserem CSV-Datensatz in SQL zu laden, erstellen wir zunächst mit dem Befehl CREATE TABLE Datenimport eine Temporäre Tabelle, in die der Gesamte CSV-Datensatz, in seiner Ursprünglichen Form, geladen wird. Im nächsten Schritt werden die Spalten aus der Temporären Tabelle in  die voher von uns erstellten Tabellen, Tabelle Station und Tabelle Wetterdaten aufgeteilt. Dafür werden als erstes die zugehörigen Daten mit dem Befehl INSERT OR IGNORE INTO Stationen in die Stationen Tabelle eingefügt. Zu dem INSERT-Befehl wird zusätzlich der IGNORE-Befehl verwendet, damit es keine doppleten Einträge in der Stationen Tabelle gibt. Mit dem SELECT-Befehl geben wir an, welche Daten in die Tabelle eingefügt werden sollen. Das gleiche machen wir auch für unsere zweite Tabelle Wetter Daten. Zum Schluss wird mit dem Befehl DROP TABLE Import die von uns zu Beginn erstellte Temporäre Tabelle gelöscht. Diese wird jetzt nicht mehr benötigt und würde nur zusätzlich Speicher verbrauchen, da unsere Daten nun Zugeorndet in den Beiden Tabellen Stationen und Wetterdaten vorliegen. Im Anschluss können nun, in Aufgabe 5, beliebige Daten mit einem SELECT-Befehl aus der Tabelle abgefragt werden.
 
 \newpage
+\begin{verbatim}
+CREATE TABLE Datenimport (
+    group_id INTEGER,
+    station_name TEXT,
+    date DATE,
+    day_of_year INTEGER,
+    day_of_week INTEGER,
+    month_of_year INTEGER,
+    precipitation FLOAT,
+    windspeed FLOAT,
+    min_temperature INTEGER,
+    average_temperature INTEGER,
+    max_temperature INTEGER,
+    count INTEGER
+);
+
+.mode csv
+.headers on
+.import "bike_sharing_data_(with_NAs).csv" Datenimport
+
+INSERT OR IGNORE INTO Stationen (station_name)
+SELECT DISTINCT station_name
+FROM Datenimport;
+
+INSERT INTO Wetter_Daten (
+    group_id, station_id, date, day_of_year, day_of_week, month_of_year,
+    precipitation, windspeed, min_temperature, average_temperature,
+    max_temperature, count
+)
+SELECT 
+    t.group_id,
+    s.station_id,
+    t.date,
+    t.day_of_year,
+    t.day_of_week,
+    CASE WHEN t.month_of_year = 'NA' THEN NULL ELSE t.month_of_year END,
+    t.precipitation,
+    t.windspeed,
+    t.min_temperature,
+    t.average_temperature,
+    t.max_temperature,
+    t.count
+FROM Datenimport t
+JOIN Stationen s ON t.station_name = s.station_name;
+
+DROP TABLE Datenimport;
+\end{verbatim}
+
 \subsection{Aufgabe 1.5}
 \begin{verbatim}
 SELECT
@@ -172,16 +226,16 @@ SELECT
     FLOAT)) - 32) * 5/9, 2) AS
     highest_average_temperature_celsius 
 FROM
-    weather_data
+    Wetter_Daten
 WHERE
-    group_id = 40
+    group_id = 40;
 \end{verbatim}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=.4]{Screenshot 2024-11-26 201543}
-\caption{Screenshot BD-Browser Ergebnis}
-\label{fig:Screenshot BD-Browser}
+\includegraphics[scale=.4]{Screenshot 2024-12-01 185857}
+\caption{Screenshot Kommandozeile Ergebnis}
+\label{fig:Screenshot Kommandozeile}
 \end{figure}
 
 Als Ergebnis für die höchste Durchschnittstemperatur ehrhalten wir, identisch zu unserem Excel-Ergbnis, einen Wert von 28,33 Grad Celsius.
@@ -198,4 +252,3 @@ Achim Klenke. \textit{Wahrscheinlichkeitstheorie}. Springer, 3. Auflage, 2013.
 \end{thebibliography}
 
 \end{document}
-
